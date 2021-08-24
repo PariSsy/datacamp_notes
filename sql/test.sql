@@ -1,0 +1,3 @@
+/*
+Created a test file in SQL
+*/
