@@ -1,0 +1,8 @@
+"0","# Load the tidyr package"
+"0","library(tidyr)"
+"0",""
+"0","iris.tidy <- iris %>%"
+"0","  gather(key, Value, -Species) %>%"
+"0","  separate(key, c(""Part"", ""Measure""), ""\\."")"
+"0",""
+"0","head(iris)"

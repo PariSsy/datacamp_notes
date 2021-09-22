@@ -1,0 +1,6 @@
+"0","datacamp_lst <- list("
+"0","  name = ""DataCamp"","
+"0","  website = ""https://www.datacamp.com"""
+"0",")"
+"0","datacamp_env <- list2env(datacamp_lst)"
+"0","founding_year <- 2013"

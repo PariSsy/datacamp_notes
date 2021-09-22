@@ -1,0 +1,4 @@
+"0","counties %>%"
+"0","  # Select the state, county, population, and those ending with ""work"""
+"0","  select(state, county, population, ends_with(""work"")) %>%"
+"0","  filter(public_work >= 50)"

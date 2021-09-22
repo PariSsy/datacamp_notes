@@ -1,0 +1,7 @@
+"0","vp1 <-plotViewport(c(1.8,1,0,1)) ## create new vp with margins, you play with this values "
+"0","require(ggplot2)"
+"0",""
+"0","q1 = ggplot(iris, aes(x = Sepal.Length, y = Sepal.Width)) +"
+"0","  geom_point() + labs(title = ""ggplot"")"
+"0","q2 = qplot(Sepal.Length, Sepal.Width, data = iris) + labs(title = ""qplot"")"
+"0","print(q1,vp = vp1)"

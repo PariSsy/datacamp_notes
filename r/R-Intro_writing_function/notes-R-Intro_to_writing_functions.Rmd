@@ -1,0 +1,667 @@
+---
+title: "Intro to Writing Functions - Richie Cotton"
+author: "Paris Zhang"
+date: "3/13/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r message=FALSE}
+library(dplyr)
+```
+
+
+# Chapter 1
+
+## Order of function arguments
+
+* Arguments of `mean()`: `x`, `trim` - the proportion of outliers from each end to remove from calculation, `na.rm`
+  * Common arguments by position, rare arguments by name: `mean(numbers, trim = 0.1, na.rm = TRUE)`
+
+## Converting scripts into functions
+
+* Arguments of `sample()`: `x`, `size`, `replace`, `prob` - a vector of sampling weights for each value of `x`, totaling one.
+
+* Toss a coin n times with weights
+```{r}
+# Update the function so heads have probability p_head
+toss_coin <- function(n_flips, p_head) {
+  coin_sides <- c("head", "tail")
+  # Define a vector of weights
+  weights <- c(p_head, 1-p_head)
+  # Modify the sampling to be weighted
+  sample(coin_sides, n_flips, replace = TRUE, prob = weights)
+}
+
+# Generate 10 coin tosses
+toss_coin(10,0.8)
+```
+
+
+## Use verbs to name a function
+
+* Types of arguments:
+  * Data arguments - what you compute on
+  * Detail arguments - how you perform the computation
+To view:
+```{r}
+args(cor)
+```
+
+* Data arguments should precede detail arguments
+```{r}
+library(dplyr)
+
+# This won't work
+data %>% lm(formula)
+
+# Revised function for linear regression
+run_linear_regression <- function(data, formula){
+  lm(formula,data)
+}
+cats %>% run_linear_regression(Hwt ~ Bet + Sex)
+```
+
+Example: model prediction - GLM with poisson
+```{r}
+# From previous step
+run_poisson_regression <- function(data, formula) {
+  glm(formula, data, family = poisson)
+}
+
+# Re-run the Poisson regression, using your function
+model <- snake_river_visits %>%
+  run_poisson_regression(n_visits ~ gender + income + travel)
+
+# Run this to see the predictions
+snake_river_explanatory %>%
+  mutate(predicted_n_visits = predict(model, ., type = "response"))%>%
+  arrange(desc(predicted_n_visits))
+```
+
+
+# Chapter 2
+
+## Default arguments
+Contents in this section:
+* numeric defaults
+* logical defaults
+* NULL defaults
+* categorical defaults
+
+* Set the default in the signature
+```{r}
+toss_coin <- function(n_flips, p_head = 0.5) {
+  coin_sides <- c("head","tail")
+  weights <- c(p_head, 1 - p_head)
+  sample(coin_sides, n_flips, replace = TRUE, prob = weights)
+}
+```
+
+* Null defaults - by convention, this means the function will do some special handling ofthis argument. Please read the docs.
+```{r}
+args(set.seed)
+```
+
+* Categorical defaults
+  * Pass a character vector in the signature
+  * Call `match.arg()` in the body
+```{r}
+args(prop.test)
+```
+
+Inside the body
+```{r}
+alternative <- match.arg(alternative)
+```
+
+### Example
+```{r}
+# 1. Set the default for n to 5
+# 2. Set the default for na.rm to FALSE
+# 3. Set the default for labels to NULL
+# 4. Set the categories for interval_type to "(lo, hi]" and "[lo, hi)"
+cut_by_quantile <- function(x, n = 5, na.rm = FALSE, labels = NULL,
+                            interval_type = c("(lo, hi]", "[lo, hi)")){
+  # Match the interval_type argument
+  interval_type <- match.arg(interval_type)
+  probs <- seq(0, 1, length.out = n + 1)
+  qtiles <- quantile(x, probs, na.rm = na.rm, names = FALSE)
+  right <- switch(interval_type, "(lo, hi]" = TRUE, "[lo, hi)" = FALSE)
+  cut(x, qtiles, labels = labels, right = right, include.lowest = TRUE)
+}
+
+cut_by_quantile(n_visits) # n_visits = number of visits to Snake River
+```
+
+
+## Passing arguments between functions
+Contents in the section:
+
+* Calculating geometric mean
+```{r}
+calc_geometric_mean <- function(x, ...){
+  x %>%
+    log() %>%
+    mean(...) %>%
+    exp()
+}
+```
+
+### Example - Harmonic mean
+The harmonic mean is the reciprocal of the arithmetic mean of the reciprocal of the data. That is $harmonic \;mean(x)=1/arithmetic\;mean(1/x)$. The harmonic mean is often used to average ratio data.
+
+```{r}
+# From previous steps
+get_reciprocal <- function(x) {
+  1 / x
+}
+calc_harmonic_mean <- function(x, ...) {
+  x %>%
+    get_reciprocal() %>%
+    mean(...) %>%
+    get_reciprocal()
+}
+
+std_and_poor500 %>% 
+  # Group by sector
+  group_by(sector) %>% 
+  # Summarize, calculating harmonic mean of P/E ratio
+  summarise(hmean_pe_ratio = calc_harmonic_mean(pe_ratio,na.rm=TRUE))
+```
+
+
+## Checking arguments
+
+Checking for numeric values:
+```{r}
+calc_geometric_mean <- function(x, na.rm = FALSE) {
+  if(!is.numeric(x)) {
+    stop("x is not of class 'numeric'; it has class '", class(x),"'.")
+    }
+
+  x %>%
+    log() %>%
+    mean(na.rm = na.rm) %>%
+    exp()
+}
+
+calc_geometric_mean(letters)
+```
+
+Checking types of inputs:
+```{r}
+library(assertive)
+
+assert_is_numeric()
+assert_is_character()
+is_data.frame()
+...
+is_two_sided_formula()
+is_tskernel()
+```
+
+```{r}
+calc_geometric_mean <- function(x, na.rm = FALSE) {
+  assert_is_numeric(x)
+  assert_all_are_positive(x)
+
+  x %>%
+    log() %>%
+    mean(na.rm = na.rm) %>%
+    exp()
+}
+
+calc_geometric_mean(letters)
+```
+
+```{r}
+calc_geometric_mean(c(1, -1))
+```
+
+### Fixing input
+```{r}
+use_first(c(1, 4, 9, 16))
+```
+
+```{r}
+coerce_to(c(1, 4, 9, 16),"character")
+```
+
+
+### Example
+
+```{r}
+calc_geometric_mean <- function(x, na.rm = FALSE) {
+  # Assert that x is numeric
+  assert_is_numeric(x)
+  # Check if any values of x are non-positive
+  if(any(is_non_positive(x), na.rm = TRUE)) {
+    stop("x contains non-positive values, so the geometric mean makes no sense.")
+  }
+  # Use the first value of na.rm, and coerce to logical
+  na.rm <- coerce_to(use_first(na.rm), target_class = "logical")
+
+  x %>%
+    log() %>%
+    mean(na.rm = na.rm) %>%
+    exp()
+}
+
+calc_geometric_mean(1:5, na.rm = 1:5)
+```
+
+
+# Chapter 3
+
+## Returning values from functions
+
+Hiding the return value
+```{r}
+simple_sum <- function(x) {
+  if(anyNA(x)) {
+    return(NA)
+  }
+  
+  total <- 0
+  for(value in x) {
+    total <- total + value
+  }
+  invisible(total) # Here
+}
+```
+
+## Returning multiple values from functions
+
+### Getting the session info:
+```{r}
+R.version.string
+Sys.info()[c("sysname","release")]
+loadedNamespaces()                 # current packages
+```
+
+```{r}
+session <- function() {
+  list(
+    r_version = R.version.string,
+    operating_system = Sys.info()[c("sysname","release")],
+    loaded_pkgs = loadedNamespaces()
+    )
+}
+session()
+```
+
+### Multi-assignment
+```{r}
+library(zeallot)
+c(vrsn, os, pkgs) %<-% session() # Assign multiple objects from the return of a function
+
+vrsn
+os
+pkgs
+```
+
+#### Attributes
+```{r}
+month_no <- setNames(1:12, month.abb)
+month_no
+```
+
+```{r}
+attributes(month_no)
+```
+
+```{r}
+attr(month_no, "names")
+```
+
+```{r}
+attr(month_no, "names") <- month.name
+month_no
+```
+
+#### Attributes from a data frame
+
+```{r}
+data(Orange, package = "datasets")
+attributes(Orange)
+```
+
+#### Attributes added by group_by()
+```{r}
+library(dplyr)
+Orange %>%
+  group_by(Tree) %>%
+  attributes()
+```
+
+### Examples
+#### Returning many things
+```{r}
+# Do not run
+library(groom)
+
+# Use broom tools to get a list of 3 data frames
+groom_model <- function(model) {
+  list(
+  # Get model-level values
+    model = glance(model),
+  # Get coefficient-level values
+    coefficients = tidy(model),
+  # Get observation-level values
+    observations = augment(model)
+  )
+}
+
+# Call groom_model on model, assigning to 3 variables
+c(mdl, cff, obs) %<-% groom_model(model)
+
+# See these individual variables
+mdl; cff; obs
+```
+
+#### Returning metadata
+```{r}
+
+pipeable_plot <- function(data, formula) {
+  plot(formula, data)
+  # Add a "formula" attribute to data
+  attr(data,"formula") <- formula
+  invisible(data)
+}
+
+# From previous exercise
+plt_dist_vs_speed <- cars %>% 
+  pipeable_plot(dist ~ speed)
+
+# Examine the structure of the result
+str(plt_dist_vs_speed)
+```
+
+## Environments
+
+### Enviroments are like lists
+```{r}
+datacamp_lst <- list(
+  name = "DataCamp",
+  founding_year = 2013,
+  website = "https://www.datacamp.com"
+  )
+ls.str(datacamp_lst)
+```
+
+```{r}
+datacamp_env <- list2env(datacamp_lst)
+ls.str(datacamp_env)
+```
+
+### Environments have parents
+```{r}
+parent <- parent.env(datacamp_env)
+environmentName(parent)
+```
+
+```{r}
+grandparent <- parent.env(parent)
+environmentName(grandparent)
+```
+
+```{r}
+search()
+```
+
+### Does a variable exist?
+```{r}
+datacamp_lst <- list(
+  name = "DataCamp",
+  website = "https://www.datacamp.com"
+)
+datacamp_env <- list2env(datacamp_lst)
+founding_year <- 2013
+```
+
+```{r}
+exists("founding_year", envir = datacamp_env)
+```
+
+```{r}
+exists("founding_year", envir = datacamp_env, inherits = FALSE)
+```
+
+## Scope and precedence
+
+No contents worth noting.
+
+# Chapter 4 Case study
+
+## Grain yields and unit conversion
+
+`magrittr`'s pipeable operator replacements
+
+* `x * y` = `x %>% multiply_by(y)`
+* `x ^ y` = `x %>% raise_to_power(y)`
+* `x[y]` = `x %>% extract(y)`
+
+```{r}
+library(magrittr)
+c(10,11) %>% extract(2)
+c(10,11)[2]
+```
+
+### Converting areas to metric
+```{r}
+# Write a function to convert sq. yards to sq. meters
+sq_yards_to_sq_meters <- function(sq_yards) {
+  sq_yards %>%
+    # Take the square root
+    sqrt() %>%
+    # Convert yards to meters
+    yards_to_meters() %>%
+    # Square it
+    raise_to_power(2)
+}
+
+# Load the function from the previous step
+load_step2()
+
+# Write a function to convert acres to hectares
+acres_to_hectares <- function(acres){
+  acres %>%
+    # Convert acres to sq yards
+    acres_to_sq_yards() %>%
+    # Convert sq yards to sq meters
+    sq_yards_to_sq_meters %>%
+    # Convert sq meters to hectares
+    sq_meters_to_hectares()
+}
+
+# Load the functions from the previous steps
+load_step3()
+
+# Define a harmonic acres to hectares function
+harmonic_acres_to_hectares <- function(acres) {
+  acres %>% 
+    # Get the reciprocal
+    get_reciprocal() %>%
+    # Convert acres to hectares
+    acres_to_hectares() %>% 
+    # Get the reciprocal again
+    get_reciprocal()
+}
+```
+
+### Converting yields to metric
+```{r}
+# Write a function to convert lb to kg
+lbs_to_kgs <- function(lbs){lbs*0.45359237}
+
+# Write a function to convert bushels to lbs
+bushels_to_lbs <- function(bushels, crop) {
+  # Define a lookup table of scale factors
+  c(barley = 48, corn = 56, wheat = 60) %>%
+    # Extract the value for the crop
+    extract(crop) %>%
+    # Multiply by the no. of bushels
+    multiply_by(bushels)
+}
+
+# Write a function to convert bushels to kg
+bushels_to_kgs <- function(bushels, crop) {
+  bushels %>%
+    # Convert bushels to lbs for this crop
+    bushels_to_lbs(crop) %>%
+    # Convert lbs to kgs
+    lbs_to_kgs()
+}
+
+# Write a function to convert bushels/acre to kg/ha
+bushels_per_acre_to_kgs_per_hectare <- function(bushels_per_acre, crop = c("barley","corn","wheat")){
+  # Match the crop argument
+  crop <- match.arg(crop)
+  bushels_per_acre %>%
+    # Convert bushels to kgs for this crop
+    bushels_to_kgs(crop) %>%
+    # Convert harmonic acres to ha
+    harmonic_acres_to_hectares()
+}
+```
+
+### Applying the unit conversion
+```{r}
+# Do not run
+
+# View the corn dataset
+glimpse(corn)
+
+corn %>%
+  # Add some columns
+  mutate(
+    # Convert farmed area from acres to ha
+    farmed_area_ha = acres_to_hectares(farmed_area_acres),
+    # Convert yield from bushels/acre to kg/ha
+    yield_kg_per_ha = bushels_per_acre_to_kgs_per_hectare(
+      yield_bushels_per_acre,
+      crop = "corn"
+    )
+  )
+
+# Wrap this code into a function
+fortify_with_metric_units <- function(data,crop){
+  data %>%
+    mutate(
+      farmed_area_ha = acres_to_hectares(farmed_area_acres),
+      yield_kg_per_ha = bushels_per_acre_to_kgs_per_hectare(
+        yield_bushels_per_acre, 
+        crop = crop
+      )
+    )
+}
+
+# Try it on the wheat dataset
+fortify_with_metric_units(wheat,"wheat")
+```
+
+## Data Visulisation
+
+dplyr inner joins
+```{r}
+dataset1 %>%
+  inner_join(dataset2, by = "column_to_join_on")
+```
+
+## Modeling grain yields
+
+### Linear models (lm) vs. Generalized additive models (gam)
+
+A linear model:
+```{r}
+lm(Y ~ X1 + X2, dat)
+```
+
+A generalized additive model:
+```{r}
+library(mgcv)
+gam(Y ~ s(X1) + X2, dat) # s() means to smooth the preditive variable
+```
+
+`mgcv` - Mixed GAM Computation Vehicle
+`gam` - generalized additive model
+
+### Predicting GAMs
+
+```{r}
+# Do not run
+
+predict_this <- data.frame(
+  explanatory_var1 = c("some","values"),
+  explanatory_var2 = c("more","values")
+)
+
+predicted_responses <- predict(model, predict_this, type = "response")
+
+predict_this %>%
+  mutate(predicted_responses = predicted_responses)
+```
+
+### Example
+```{r}
+# Wrap the model code into a function
+run_gam_yield_vs_year_by_region <- function(data){
+  gam(yield_kg_per_ha ~ s(year) + census_region, data = data)
+}
+
+# Try it on the wheat dataset
+run_gam_yield_vs_year_by_region(wheat)
+```
+
+
+Making yield predictions
+```{r}
+# Wrap this prediction code into a function
+predict_yields <- function(model,year){
+  predict_this <- data.frame(
+    year = year,
+    census_region = census_regions
+  ) 
+  
+  pred_yield_kg_per_ha <- predict(model, predict_this, type="response")
+  
+  predict_this %>%
+    mutate(pred_yield_kg_per_ha = pred_yield_kg_per_ha)
+}
+
+# Try it on the wheat dataset
+predict_yields(wheat_model, year=2050)
+```
+
+
+### Example on Barley
+```{r}
+fortified_barley <- barley %>% 
+  # Fortify with metric units
+  fortify_with_metric_units() %>%
+  # Fortify with census regions
+  fortify_with_census_region()
+
+# Plot yield vs. year by region
+plot_yield_vs_year_by_region(fortified_barley)
+
+fortified_barley %>% 
+  # Run a GAM of yield vs. year by region
+  run_gam_yield_vs_year_by_region()  %>% 
+  # Make predictions of yields in 2050
+  predict_yields(2050)
+```
+
+
+
+
+
+
+
+
+
+

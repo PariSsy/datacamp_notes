@@ -1,0 +1,5 @@
+"0","babynames_fraction %>%"
+"0","  filter(name == ""Matthew"") %>%"
+"0","  arrange(year) %>%"
+"0","  mutate(difference = fraction - lag(fraction)) %>%"
+"0","  arrange(desc(difference))"

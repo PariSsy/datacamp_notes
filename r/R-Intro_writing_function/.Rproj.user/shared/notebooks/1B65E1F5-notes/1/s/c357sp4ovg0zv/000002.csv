@@ -1,0 +1,15 @@
+"0","calc_geometric_mean <- function(x, na.rm = FALSE) {"
+"0","  if(!is.numeric(x)) {"
+"0","    stop(""x is not of class 'numeric'; it has class '"", class(x),""'."")"
+"0","    }"
+"0",""
+"0","  x %>%"
+"0","    log() %>%"
+"0","    mean(na.rm = na.rm) %>%"
+"0","    exp()"
+"0","}"
+"0",""
+"0","calc_geometric_mean(letters)"
+"2","Error in calc_geometric_mean(letters) : 
+  x is not of class 'numeric'; it has class 'character'.
+"

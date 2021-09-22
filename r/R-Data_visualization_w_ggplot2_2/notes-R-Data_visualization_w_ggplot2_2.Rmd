@@ -1,0 +1,123 @@
+---
+title: "Data Visualization with ggplot2 - Part 2"
+author: "Paris Zhang"
+date: "4/19/2020"
+output:
+  html_document:
+    code_folding: show
+    toc: yes
+    toc_depth: 4
+    toc_float: true
+    fig_width: 6
+    fig_height: 4
+editor_options:
+  chunk_output_type: inline
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, message=FALSE}
+library(tidyverse)
+library(gridExtra)
+```
+
+
+# 1. Statistics
+
+
+## 1.1 Stats & geoms
+
+### Stats
+
+Exampe 1. `geom_` <-> `stat_`
+
+* By default, `geom_histogram()` calls `stat_bin()` for histograms, binwidth = range/30.
+* See `geom_bar()` shows different bins.
+
+```{r}
+p <- ggplot(iris, aes(x = Sepal.Width))
+p1 <- p + geom_histogram() + labs(title = "geom_histogram()")
+p2 <- p + geom_bar() + labs(title = "geom_bar()")
+p3 <- p + stat_bin() + labs(title = "stat_bin()")
+
+grid.arrange(p1,p2,p3, nrow=3)
+```
+
+
+
+
+
+### Geoms
+
+
+## 1.2 Stats outside geoms
+
+
+
+
+***
+
+
+# 2. Coordinates and Facets
+
+
+## 2.1 Coordinates layer
+
+
+## 2.2 Facets layer
+
+
+
+
+***
+
+
+
+# 3. Themes
+
+
+## 3.1 Themes from scratch
+
+
+## 3.2 Recycling themes
+
+
+
+
+***
+
+
+
+# 4. Best Practices
+
+
+
+## 4.1 Avoid dynamite plot (barplot)
+
+
+
+## 4.2 Avoid pie charts
+
+
+## 4.3 Avoid heat maps
+
+
+***
+
+
+
+
+
+# 5. Case Study
+
+CHIS - California Health Interview Survey dataset from 2009
+
+
+## 5.1 CHIS - Descriptive stats
+
+
+## 5.2 CHIS - Mosaic plots
+
+

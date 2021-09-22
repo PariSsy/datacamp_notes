@@ -1,0 +1,14 @@
+"0","calc_geometric_mean <- function(x, na.rm = FALSE) {"
+"0","  assert_is_numeric(x)"
+"0","  assert_all_are_positive(x)"
+"0",""
+"0","  x %>%"
+"0","    log() %>%"
+"0","    mean(na.rm = na.rm) %>%"
+"0","    exp()"
+"0","}"
+"0",""
+"0","calc_geometric_mean(letters)"
+"2","Error in calc_geometric_mean(letters) : 
+  is_numeric : x is not of class 'numeric'; it has class 'character'.
+"

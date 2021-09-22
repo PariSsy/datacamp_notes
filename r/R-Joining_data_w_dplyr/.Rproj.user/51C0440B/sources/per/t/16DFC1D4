@@ -1,0 +1,27 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1587065129661.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "2275471228",
+    "id" : "16DFC1D4",
+    "lastKnownWriteTime" : 1587158085,
+    "last_content_update" : 1587158085175,
+    "path" : "~/Documents/Training/DataCamp/R-Joining_data_w_dplyr/notes-R-Joining_data_w_dplyr.Rmd",
+    "project_path" : "notes-R-Joining_data_w_dplyr.Rmd",
+    "properties" : {
+        "cursorPosition" : "396,52",
+        "last_setup_crc32" : "3F4E1BC7bb338d19",
+        "scrollLine" : "376",
+        "tempName" : "Untitled1"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 1,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_markdown"
+}

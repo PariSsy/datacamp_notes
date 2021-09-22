@@ -1,0 +1,8 @@
+"0","args(prop.test)
+"
+"1","function (x, n, p = NULL, alternative = c(""two.sided"", ""less"", 
+"
+"1","    ""greater""), conf.level = 0.95, correct = TRUE) 
+"
+"1","NULL
+"

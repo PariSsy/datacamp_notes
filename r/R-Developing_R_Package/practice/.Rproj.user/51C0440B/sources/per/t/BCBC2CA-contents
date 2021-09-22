@@ -1,0 +1,206 @@
+---
+title: "Chapter 3 - Checking and Building R Packages"
+author: "Paris Zhang"
+date: "2/9/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Sec 1. Why check an R package?
+
+## Running a check
+Before a package can be made available on CRAN it is required to pass a series of checks that can be run from the command line using R CMD check. Even if you don't intend to make a package available on CRAN, it is good practice to run this and ensure that your package passes all of the checks. Just like all other build features this is simplified in `devtools` with the function `check()`.  
+
+When you run `check()`, if the argument `cran` is set to TRUE, you run exactly the same checks which are run when you submit a package to CRAN. As the `cran` argument has a default value of TRUE, you do not need to do change it unless you do not wish to run all of the CRAN checks.  
+
+**Instructions:**  
+Use the `check()` function to check the `datasummary` package.  
+
+```{r}
+# Check your package
+check("datasummary")
+```
+
+**Results**
+
+> check("datasummary")
+Updating datasummary documentation
+Loading datasummary
+Writing NAMESPACE
+Writing NAMESPACE
+Setting env vars --------------------------------------------------------------
+CFLAGS  : -Wall -pedantic
+CXXFLAGS: -Wall -pedantic
+Building datasummary ----------------------------------------------------------
+'/usr/lib/R/bin/R' --no-site-file --no-environ --no-save --no-restore --quiet  \
+  CMD build '/home/repl/datasummary' --no-resave-data --no-manual
+
+Setting env vars --------------------------------------------------------------
+_R_CHECK_CRAN_INCOMING_ : FALSE
+_R_CHECK_FORCE_SUGGESTS_: FALSE
+Checking datasummary ----------------------------------------------------------
+'/usr/lib/R/bin/R' --no-site-file --no-environ --no-save --no-restore --quiet  \
+  CMD check '/tmp/RtmpPHUifn/datasummary_0.0.0.9000.tar.gz' --as-cran  \
+  --timings --no-manual
+
+R CMD check results
+1 error  | 0 warnings | 0 notes
+checking package dependencies ... ERROR
+Namespace dependencies not required: 'dplyr' 'purrr' 'tidyr'
+
+See section 'The DESCRIPTION file' in the 'Writing R Extensions'
+manual.
+
+
+
+
+***
+
+
+
+# Sec 2. Errors, warnings and notes
+
+## Undocumented parameters
+If you've forgotten to document any of the parameters, when you run the `check()` function, you'll get a WARNING message that looks a bit like this:  
+
+Undocumented arguments in documentation object 'numeric_summary'  
+  'na.rm'  
+  
+Note: you wouldn't normally get this error for non-exported functions  
+
+To remove this warning, you'll need to update the documentation for the parameter in the function's `.R` file, and then run `check()` again. You might think you need to run the `document()` function again. However, there's no need to do this, as `check()` automatically runs `document()` for you before completing its checks.  
+
+**Instructions:**  
+
+1. Update the `roxygen` header for the function "numeric_summary" to document the missing parameter (`na.rm`).  
+2. Include the following description for the parameter "a logical value indicating whether NA values should be stripped before the computation proceeds."  
+
+```{r}
+#' Numeric Summaries
+#' Summarises numeric data and returns a data frame containing the minimum value, median, standard deviation, and maximum value.
+#'
+#' @param x a numeric vector containing the values to summarize.
+#' @param na.rm a logical value indicating whether NA values should be stripped before the computation proceeds.
+numeric_summary <- function(x, na.rm){
+
+  if(!is.numeric(x)){
+    stop("data must be numeric")
+  }
+
+  data.frame( min = min(x, na.rm = na.rm),
+              median = median(x, na.rm = na.rm),
+              sd = sd(x, na.rm = na.rm),
+              max = max(x, na.rm = na.rm))
+}
+```
+
+
+
+
+
+## Undefined global variables
+The way in which you define variables in `tidyverse` package functions can cause confusion for the *R CMD check*, which sees column names and the name of your dataset, and flags them as "undefined global variables".  
+
+To get around this, you can manually specify the data and its columns as a vector to `utils::globalVariables()`, by including a line of code similar to the following in your package-level documentation:
+
+`utils::globalVariables(c("dataset_name", "col_name_1", "col_name_2"))`  
+
+This defines `dataset_name`, `col_name_1`, and `col_name_2` as global variables, and now you shouldn't get the undefined global variables error.  
+
+**Instructions:**  
+
+A new function, `get_mean_temp()`, is available in your workspace. Take a look at what it does by running `get_mean_temp` (with no brackets) in the console. Update the package-level documentation so this function can be successfully added to your package without causing `check()` to fail because of "undefined global variables".  
+
+> get_mean_temp
+function(){
+    summarize(weather, meanTemp = mean(Temp))
+}
+
+```{r}
+#' datasummary: Custom Data Summaries
+#'
+#' Easily generate custom data frame summaries
+#'
+#' @docType package
+#' @name datasummary
+"_PACKAGE"
+
+# Update this function call
+utils::globalVariables(c("weather", "Temp"))
+```
+
+
+
+
+
+
+***
+
+
+
+# Sec 3. Differences in package dependencies
+
+## Depends or imports?
+The `Depends` and `Imports` fields in the DESCRIPTION file can cause a lot of confusion to those new to package building! Both of these fields contain package dependencies which are installed when you install the package. However, the difference between them is that the packages listed in depends are attached when the package is loaded, whereas the packages listed in imports are not.  
+
+This distinction is important because if two different packages have an identically named function, the version of the function from the package which has been loaded most recently will be used. Therefore, to make sure you are using the correct function, it is best practice to use `imports` to list your dependencies and then in your code explicitly name the package and function it's from in the form `package::function()`, e.g. `dplyr::select()`.  
+
+In the majority of cases, you should only list the version of R required in the `Depends` field and the package in the `Imports` field.  
+
+
+## Adding the import to the description
+If your package imports functions from other packages, they must be listed in the `DESCRIPTION` file. You don't need to manually add these - you can use the `use_package()` function to automatically add packages to your `DESCRIPTION` file. By default, they are added as `imports`, but if you alter the type parameter, you can change whether the package is listed as `depends`, `imports`, `suggests`, or a different option.  
+
+**Instructions:**  
+Add `dplyr`, `tidyr`, and `purrr` as imported dependencies to the `DESCRIPTION` file of your package.  
+
+```{r}
+
+# Add dplyr as an imported dependency to the DESCRIPTION file
+use_package("dplyr", pkg = "datasummary")
+
+# Add purrr as an imported dependency to the DESCRIPTION file
+use_package("purrr", pkg = "datasummary")
+
+# Add tidyr as an imported dependency to the DESCRIPTION file
+use_package("tidyr", pkg = "datasummary")
+```
+
+
+
+
+***
+
+
+
+# Sec 4. Building packages with continuous integration
+
+
+## Building an R package
+Once you have created the correct structure, included all of your functions, created the package documentation and ensured that the checks pass you can then build your package so that it is in a shareable format.  
+
+You can build your package using the `build()` function from `devtools`. You can use this function to build either a source version of the package, or a Windows/Mac specific binary version. The source version of the package will have a file ending of ".tar.gz" and the binary will take the ending ".zip" (Windows) or ".tgz" (Mac). You can only build binaries for the current platform that you're using. The `build()` function builds the source version of the package by default.  
+
+**Instructions:**  
+
+1. Build the source version of the `datasummary` package.  
+2. Look at the contents of the current directory using `dir()` to see the built version of your package.  
+
+```{r}
+# Build the package
+build("datasummary")
+
+# Examine the contents of the current directory
+dir("./")
+```
+
+
+[1] "/home/repl/datasummary_0.0.0.9000.tar.gz"
+
+[2] "datasummary"                   "datasummary_0.0.0.9000.tar.gz"
+
+
+

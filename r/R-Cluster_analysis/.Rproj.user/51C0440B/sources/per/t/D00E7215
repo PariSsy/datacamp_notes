@@ -1,0 +1,26 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1592808817450.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "2446943872",
+    "id" : "D00E7215",
+    "lastKnownWriteTime" : 1592809348,
+    "last_content_update" : 1592809348849,
+    "path" : "~/Documents/Training/DataCamp/R-Cluster_analysis/notes-R-Cluster_analysis.Rmd",
+    "project_path" : "notes-R-Cluster_analysis.Rmd",
+    "properties" : {
+        "cursorPosition" : "131,19",
+        "last_setup_crc32" : "9D5AA76Ebb338d19",
+        "scrollLine" : "124"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 1,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_markdown"
+}

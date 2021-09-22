@@ -1,0 +1,59 @@
+---
+title: "Importing and Cleaning Data - Case Studies"
+author: "Paris Zhang"
+date: "3/17/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Ticket Sales Data
+
+1. **Separating columns**:
+  * Use `separate()` from `tidyr` package - `separate(sales, event_date_time, c("event_dt","event_time"), sep = " ")`
+2. **Identifying dates**:
+  * Use `str_detect()` from `stringr` package to detect strings - `str_detect(string = names(sales5), pattern = "dt")`
+  * Use `lubridate` package to coerce character strings to `Date` objects - combing letters `y`, `m`, `d`, `h`, `m`, `s`.
+3. **Combining columns**:
+  * Use `unite()` from `tidyr` package to combine multiple columns - `unite(data = sales5, col = "venue_city_state", c("venue_city","venue_state"), sep = ", ")`
+  
+
+***
+
+
+# MBTA Ridership Data
+The Massachusetts Bay Transportation Authority ("MBTA" or just "the T" for short) manages America's oldest subway, as well as Greater Boston's commuter rail, ferry, and bus systems.
+
+1. Using `read_excel()` from `readxl` to read excel and skip lines - `read_excel("mbta.xlsx", skip = 1)`
+2. `gather()` and `spread()` from `tidyr`
+  * `gather(mbta3, key = "month", value = "thou_riders", -mode)`
+  * `mbta4 %>% spread(key = mode, value = thou_riders)`
+3. Split month column to year and month - `separate(mbta5, month, c("year", "month"), sep = "-")`
+
+
+***
+
+
+# World Food Facts
+
+1. Using `fread()` from `data.table` to read file faster and save as a data frame - `fread("food.csv", data.table = FALSE)`
+
+
+***
+
+
+# School Attendence Data
+In this chapter, you'll work with attendance data from public schools in the US, organized by school level and state, during the 2007-2008 academic year. The data contain information on average daily attendance (ADA) as a percentage of total enrollment, school day length, and school year length.
+
+[Download](http://s3.amazonaws.com/assets.datacamp.com/production/course_1294/datasets/attendance.xls) data or preview a [screenshot](http://s3.amazonaws.com/assets.datacamp.com/production/course_1294/datasets/attendance_screenshot.png)
+
+1. **Cleaning up extra characters**:
+  * One pitfall to avoid: `.` is a special character in the language of regular expressions (a.k.a. regex). In order to specify that you actually want to remove periods and not their regex equivalent (which is "all characters"), use `\\.`. This is called an "escape" sequence.
+  * Use `str_replace_all()` from `stringr` to replace all periods - `str_replace_all(string = att5$state, pattern = "\\.", replace = "")`
+  * Use `str_trim()` to remove all white splaces - `str_trim(string = att5$state, side = "both")`. Here `side` means the direction of the string that you want to trim white space from.
+2. **Some final type conversions**
+  * Change columns to numeric using `dplyr` - `mutate_at(att5, vars(-state), funs(as.numeric))`
+
+

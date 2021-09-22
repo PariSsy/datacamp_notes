@@ -1,0 +1,5 @@
+"0","# Aggregating sets into colors"
+"0","batmobile_colors <- batmobile %>%"
+"0","  group_by(color_id) %>%"
+"0","  summarize(total = sum(quantity))"
+"0","batmobile_colors"

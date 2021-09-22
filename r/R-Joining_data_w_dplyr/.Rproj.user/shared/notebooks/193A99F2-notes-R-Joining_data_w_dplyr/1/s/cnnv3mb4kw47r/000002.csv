@@ -1,0 +1,2 @@
+"0","inventories = readRDS(""data/inventories.rds"")"
+"0","head(inventories)"

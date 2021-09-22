@@ -1,0 +1,578 @@
+---
+title: "Data Visualization with ggplot2 - Part 1"
+author: "Paris Zhang"
+date: "4/17/2020"
+output:
+  html_document:
+    code_folding: show
+    toc: yes
+    toc_depth: 4
+    toc_float: true
+    fig_width: 6
+    fig_height: 4
+editor_options:
+  chunk_output_type: inline
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE)
+```
+
+Taught by *Rick Scavetta*. [Course link](https://learn.datacamp.com/courses/data-visualization-with-ggplot2-1)
+
+```{r, message=FALSE}
+library(dplyr)
+library(ggplot2)
+
+# Create n by m ggplot grid
+library(gridExtra)
+
+# Read and print local images using load.image() and plot(..., axes=F)
+library(imager)
+
+# Applies classic ggplot2 theme
+theme_set(theme_classic())
+
+```
+
+
+# 1. Intro
+The basics of `ggplot2` — the seven different grammatical elements (layers) and aesthetic mappings.
+
+## 1.1 Intro
+
+MASS: Mammals
+```{r}
+library(MASS)
+head(mammals)
+```
+
+Publication-ready plot:
+```{r}
+library(scales) # functions trans_breaks and trans_format
+ggplot(mammals, aes(x = body, y = brain)) +
+ annotation_logticks() +
+ geom_point(alpha = 0.6) +
+ coord_fixed(xlim = c(10^-3, 10^4), ylim = c(10^-1, 10^4)) +
+ scale_x_log10(expression("Body weight (log"["10"]*"(Kg))"),
+               breaks = trans_breaks("log10", function(x) 10^x),
+               labels = trans_format("log10", math_format(10^.x))) +
+ scale_y_log10(expression("Brain weight (log"["10"]*"(g))"),
+               breaks = trans_breaks("log10", function(x) 10^x),
+               labels = trans_format("log10", math_format(10^.x))) +
+ stat_smooth(method = "lm", col = "#C42126", se = FALSE, size = 1) +
+ theme_classic()
+```
+
+
+## 1.2 Grammar of graphics
+
+(Review chapter 1 slides p.40)
+
+Essential grammatical elements:
+
+1. Data - variables of interest
+2. Aesthetics
+  2.1 x-axis, y-axis
+  2.2 colour, fill, size, labels, alpha, shape, line width, line type
+3. Geometries - point, line, histogram, bar, boxplot
+
+Optional grammatical elements:
+
+4. Facets - columns, rows
+5. Statistiscs - binning, smoothing, descriptive, inferential
+6. Coordinates - cartesian, fixed, polar, limits
+7. Themes - non-data ink
+
+
+## 1.3 `ggplot2`
+
+Iris dataset:
+```{r}
+levels(iris$Species) <- c("Setosa", "Versicolor", "Virginica")
+
+ggplot(iris, aes(x = Sepal.Length, y = Sepal.Width)) +
+ geom_jitter(alpha = 0.6) +
+ facet_grid(. ~ Species) +
+ stat_smooth(method = "lm", se = F, col = "red") +
+ scale_y_continuous("Sepal Width (cm)", limits = c(2,5), expand = c(0,0)) +
+ scale_x_continuous("Sepal Length (cm)", limits = c(4,8), expand = c(0,0)) +
+ coord_equal() +
+ theme(panel.background = element_blank(),
+       plot.background = element_blank(),
+       legend.background = element_blank(),
+       legend.key = element_blank(),
+       strip.background = element_blank(),
+       axis.text = element_text(colour = "black"),
+       axis.ticks = element_line(colour = "black"),
+       panel.grid.major = element_blank(),
+       panel.grid.minor = element_blank(),
+       axis.line = element_line(colour = "black"),
+       strip.text = element_blank())
+```
+
+
+
+***
+
+
+# 2. Data
+
+
+## 2.1 Objects and layers
+
+```{r}
+# Plot 3: include a lm for the entire dataset in its whole
+ggplot(mtcars, aes(x = wt, y = mpg, col = factor(cyl))) +
+  geom_point() + # Copy from Plot 2
+  geom_smooth(method = "lm", se = FALSE) + # Copy from Plot 2
+  geom_smooth(aes(group = 1), method = "lm", se = FALSE, linetype = 2)
+```
+
+
+
+## 2.2 Proper data format
+
+Use `iris.wide` instead of `iris`.
+
+
+## 2.3 Tidy data
+
+1. Use `gather()` and `separate()` from `tidyr` to create tidy dataset:
+
+```{r}
+# Load the tidyr package
+library(tidyr)
+
+iris.tidy <- iris %>%
+  gather(key, Value, -Species) %>%
+  separate(key, c("Part", "Measure"), "\\.")
+
+head(iris)
+head(iris.tidy)
+```
+
+2. Create a wide dataset
+
+```{r}
+# Add column with unique ids (don't need to change)
+iris$Flower <- 1:nrow(iris)
+
+# Fill in the ___ to produce to the correct iris.wide dataset
+iris.wide <- iris %>%
+  gather(key, value, -Species, -Flower) %>%
+  separate(key, c("Part", "Measure"), "\\.") %>%
+  spread(Measure, value)
+
+head(iris.wide)
+```
+
+
+
+***
+
+
+# 3. Aesthetics
+
+
+## 3.1 Visible aesthetics
+
+* Data frame column mapped onto visible aesthetic: Aesthetics in `aes()`, a!ributes in `geom_()`
+* **Hexadecimal colours**: Hexadecimal, literally "related to 16", is a base-16 alphanumeric counting system. Individual values come from the ranges 0-9 and A-F. This means there are 256 possible two-digit values (i.e. 00 - FF). Hexadecimal colours use this system to specify a six-digit code for Red, Green and Blue values ("#RRGGBB") of a colour (i.e. Pure blue: "#0000FF", black: "#000000", white: "#FFFFFF"). R can accept hex codes as valid colours.
+
+## 3.2 Modifying aesthetics
+
+`geom_bar()` positions:
+
+* `position = "stack"` is default 
+* `position = "fill"`
+* `position = "dodge"`
+
+```{r}
+val = c("#E41A1C", "#377EB8")
+lab = c("Manual", "Automatic")
+
+ggplot(mtcars, aes(x = factor(cyl), fill = factor(am))) +
+  geom_bar(position = "dodge") +
+  scale_x_discrete("Cylinders") + 
+  scale_y_continuous("Number") +
+  scale_fill_manual("Transmission", values = val, labels = lab) 
+```
+
+
+## 3.3 Aesthetics best practices
+
+* Use `stripchart()` from `base` package to make univariate plot - it creates a fake y-axis
+
+```{r}
+stripchart(mtcars$mpg)
+```
+
+
+```{r}
+ggplot(mtcars, aes(x = mpg, y = 0)) +
+  geom_jitter()+
+  scale_y_continuous(limits=c(-2, 2))
+```
+
+* The `diamonds` data frame is available in the `ggplot2` package.
+
+
+***
+
+
+# 4. Geometrics
+
+1. There are 37 geometries under `ggplot2`.
+2. Common plot types:
+  2.1 Scatter plots (points, jitter, abline)
+    2.1.1 `geom_jitter()` = `geom_point(position = "jitter")`
+  2.2 Bar plots (histogram, bar, errorbar)
+  2.3 Line plots (line)
+
+```{r}
+p1 = load.image("slides/ch4_p1.png")
+p2 = load.image("slides/ch4_p2.png")
+p3 = load.image("slides/ch4_p3.png")
+plot(p1, axes=FALSE)
+```
+
+
+
+## 4.1 Scatter plots
+
+Modification with manually calculated summary statistics:
+```{r}
+head(iris)
+```
+
+```{r}
+iris.summary <- aggregate(iris[1:4], list(iris$Species), mean)
+names(iris.summary)[1] <- "Species"
+iris.summary
+```
+
+1. Add layers:
+```{r}
+ggplot(iris, aes(x = Sepal.Length, y = Sepal.Width, col = Species)) +
+  geom_point() +
+  geom_point(data = iris.summary, shape = 15, size = 5)
+```
+
+2. shape ~ `pch`:
+```{r}
+plot(p2, axes=FALSE)
+```
+
+```{r}
+ggplot(iris, aes(x = Sepal.Length, y = Sepal.Width, col = Species)) +
+ geom_point() +
+ geom_point(data = iris.summary, shape = 21, size = 5, fill = "#00000080")
+```
+
+3. Crosshairs with `geom_vline()` and `geom_hline()`
+```{r}
+ggplot(iris, aes(x = Sepal.Length, y = Sepal.Width, col = Species)) +
+ geom_point() +
+ geom_vline(data = iris.summary, linetype = 2,
+            aes(xintercept = Sepal.Length, col = Species)) +
+ geom_hline(data = iris.summary, linetype = 2,
+            aes(yintercept = Sepal.Width, col = Species))
+```
+
+Different line types:
+```{r}
+plot(p3, axes = FALSE)
+```
+
+4. `geom_jitter()` with narrower width
+
+```{r}
+ggplot(mtcars, aes(x = cyl, y = wt)) +
+  geom_jitter(width=0.1)
+```
+
+
+## 4.2 Bar plots
+
+1. **Histogram** - `geom_histogram()`
+  1.1 The default bin width is **range/30**. We could set bin width manually by `geom_histogram(binwidth = 0.1)`.
+  1.2 The default y-axis is count, a variable mapped to y as `..count..`. We could switch to density by setting `aes(y = ..density..)`. The double `..` means internal data frame.
+  1.3 There's no space between bars.
+  1.4 Three `position` arguments:
+    1.4.1 `stack`: place the bars on top of each other. Counts are used. This is the default position.
+    1.4.2 `fill`: place the bars on top of each other, but this time use proportions.
+    1.4.3 `dodge`: place the bars next to each other. Counts are used.
+2. **Bar plot** - `geom_bar()`
+  2.1 Two types: count and distribution.
+  2.2 The default `stat` is `bin`.
+  2.3 Set color palette with `scale_fill_brewer()`. For a full list of possible color sets, have a look at `?brewer.pal`.
+    2.3.1 For continuous data, the default `RColorBrewer` palette that `scale_fill_brewer()` calls is `"Blues"`.
+
+### Ex 1. Different types of **histogram** by setting `position`:
+
+```{r}
+hist1 = ggplot(iris, aes(x = Sepal.Width )) +
+  geom_histogram(binwidth = 0.1) +
+  labs(title = "geom_histogram() stack by default")
+hist2 = ggplot(iris, aes(x = Sepal.Width, fill = Species)) +
+  geom_histogram(binwidth = 0.1, position = "stack") +
+  labs(title = "position = \"stack\"")
+hist3 = ggplot(iris, aes(x = Sepal.Width, fill = Species)) +
+  geom_histogram(binwidth = 0.1, position = "dodge") +
+  labs(title = "position = \"dodge\"")
+hist4 = ggplot(iris, aes(x = Sepal.Width, fill = Species)) +
+  geom_histogram(binwidth = 0.1, position = "fill") +
+  labs(title = "position = \"fill\"")
+
+grid.arrange(hist1,hist2,hist3,hist4, nrow=2,ncol=2)
+```
+
+### Ex 2. Different types of **bar plot** using `sleep` dataset:
+
+```{r, eval=FALSE}
+bar1 = ggplot(sleep, aes(vore)) + geom_bar() +
+  labs(title = "geom_bar() stat = \"bin\" by default")
+bar2 =  ggplot(sleep, aes(vore)) + geom_bar( ) +
+  labs(title = "stat = \"bin\"")
+
+# Distribution bar plots
+library(plyr)
+library(reshape2) # to use melt()
+iris_melted <- melt(iris, value.name = "Value", variable.name = "Measure")
+iris_summ <- ddply(iris_melted[iris_melted$Measure == "Sepal.Width",],
+                   "Species", summarise, avg = mean(Value), stdev = sd(Value))
+bar3 =  ggplot(iris_summ, aes(x = Species, y = avg)) +
+  geom_bar( stat = "identity") +
+  labs(title = "stat = \"identity\"")
+bar4 =  ggplot(iris_summ, aes(x = Species, y = avg)) +
+  geom_bar(stat = "identity", fill = "grey50") +
+  geom_errorbar(aes(ymin = avg - stdev, ymax = avg + stdev), width = 0.2) +
+  labs(title = "geom_errorbar() aka dynamite plot")
+
+grid.arrange(bar1,bar2,bar3,bar4, nrow=2,ncol=2)
+```
+
+```{r}
+b1 = load.image("slides/ch4_bar1.png")
+b3 = load.image("slides/ch4_bar2.png")
+b4 = load.image("slides/ch4_bar3.png")
+
+par(mfrow=c(2,2))
+plot(b1, axes = FALSE)
+plot(b1, axes = FALSE)
+plot(b3, axes = FALSE)
+plot(b4, axes = FALSE)
+```
+
+### Ex 3. Dodge bar plots: 
+
+```{r}
+mtcars$am <- as.factor(mtcars$am)
+
+d1 = ggplot(mtcars, aes(x = cyl, fill = am)) +
+  geom_bar(position = "dodge")
+
+# 2 - Define posn_d with position_dodge()
+posn_d <- position_dodge(width=0.2)
+d2 = ggplot(mtcars, aes(x = cyl, fill = am)) +
+  geom_bar(position = posn_d)
+
+# 4 - Use posn_d as position and adjust alpha to 0.6
+d3 = ggplot(mtcars, aes(x = cyl, fill = am)) +
+  geom_bar(position = posn_d, alpha = 0.6)
+
+grid.arrange(d1,d2,d3, nrow=1)
+```
+
+### Ex 4. Color palette
+```{r}
+pal1 = ggplot(mtcars, aes(x = cyl, fill = am)) +
+  geom_bar() +
+  scale_fill_brewer(palette = "Set1")
+
+library(car) # to use Vocab
+Vocab$education = as.factor(Vocab$education)
+Vocab$vocabulary = as.factor(Vocab$vocabulary)
+pal2 = ggplot(Vocab, aes(x=education, fill=vocabulary)) +
+  geom_bar(position = "fill")+
+  scale_fill_brewer()
+
+grid.arrange(pal1,pal2, nrow=1)
+```
+
+### Ex 5. Build a color palette
+`new_col()` is a function that takes one argument: the number of colours you want to extrapolate. You want to use nicer colours, so we've assigned the entire `"Blues"` colour palette from the `RColorBrewer` package to the character vector blues.
+
+```{r}
+new_col <- colorRampPalette(c("#FFFFFF", "#0000FF"))
+# new_col(4) # the newly extrapolated colours
+munsell::plot_hex(new_col(4)) # Quick and dirty plot
+```
+
+
+```{r}
+library(RColorBrewer)
+
+# Definition of a set of blue colors
+blues <- brewer.pal(9, "Blues") # from the RColorBrewer package
+# 1 - Make a color range using colorRampPalette() and the set of blues
+blue_range <- colorRampPalette(blues)
+
+# 2 - Use blue_range to adjust the color of the bars, use scale_fill_manual()
+pal3 = ggplot(Vocab, aes(x = education, fill = vocabulary)) +
+  geom_bar(position = "fill") +
+  scale_fill_manual(values = blue_range(11))
+
+grid.arrange(pal2, pal3, nrow=1)
+```
+
+
+### Ex 6. Overlapping histograms
+
+```{r}
+mtcars$cyl = as.factor(mtcars$cyl)
+
+# 1 - Basic histogram plot command
+o1 = ggplot(mtcars, aes(mpg)) +
+  geom_histogram(binwidth = 1) + labs(title = "Base")
+
+# 2 - Plot 1, Expand aesthetics: am onto fill
+o2 = ggplot(mtcars, aes(mpg, fill=am)) +
+  geom_histogram(binwidth = 1) + labs(title = "1")
+
+# 3 - Plot 2, change position = "dodge"
+o3 = ggplot(mtcars, aes(mpg, fill=am)) +
+  geom_histogram(binwidth = 1, position = "dodge") + labs(title = "2")
+
+# 4 - Plot 3, change position = "fill"
+o4 = ggplot(mtcars, aes(mpg, fill=am)) +
+  geom_histogram(binwidth = 1, position = "fill") + labs(title = "3")
+  
+# 5 - Plot 4, plus change position = "identity" and alpha = 0.4
+o5 = ggplot(mtcars, aes(mpg, fill=am)) +
+  geom_histogram(binwidth = 1, position = "identity", alpha=0.4) + labs(title = "4")
+
+# 6 - Plot 5, plus change mapping: cyl onto fill
+o6 = ggplot(mtcars, aes(mpg, fill=cyl)) +
+  geom_histogram(binwidth = 1, position = "identity", alpha=0.4) + labs(title = "5")
+
+grid.arrange(o1,o2,o3,o4,o5,o6, nrow=2,ncol=3)
+```
+
+
+## 4.3 Line plots
+
+Use `geom_ribbon(aes(ymax = Capture, ymin = 0), alpha = 0.3)` to create overlapping line plot.
+
+### Ex 1. Unemployment and recession
+
+```{r}
+recess = data.frame(
+  begin = c("1969-12-01","1973-11-01","1980-01-01","1981-07-01","1990-07-01","2001-03-01"),
+  end = c("1970-11-01","1975-03-01","1980-07-01","1982-11-01","1991-03-01","2001-11-01")
+)
+recess$begin = as.Date(recess$begin)
+recess$end = as.Date(recess$end)
+
+# Expand the following command with geom_rect() to draw the recess periods
+ggplot(economics, aes(x = date, y = unemploy/pop)) +
+  geom_rect(data = recess,
+            aes(xmin = begin, xmax = end, ymin = -Inf, ymax = +Inf),
+            inherit.aes = FALSE, fill = "red", alpha = 0.2) +
+  geom_line()
+```
+
+
+
+
+***
+
+
+# 5. qplot and wrap-up
+
+
+## 5.1 `qplot()`
+1. `qplot()` is a basic alternative to `ggplot2` scatter plot: easy, quick, and dirty.
+
+```{r}
+q1 =  ggplot(iris, aes(x = Sepal.Length, y = Sepal.Width)) +
+  geom_point() + labs(title = "ggplot")
+q2 =  qplot(Sepal.Length, Sepal.Width, data = iris) + labs(title = "qplot")
+
+grid.arrange(q1,q2, ncol=2)
+```
+
+
+```{r}
+par(mfrow=c(1,2))
+
+plot(iris$Sepal.Length, iris$Sepal.Width, main = "base R, v1")
+plot(Sepal.Width ~ Sepal.Length, data = iris, main = "base R, v2")
+```
+
+
+The following part is to try a ggplot + base R layout.
+```{r}
+library(gridBase)
+library(grid)
+par(mfrow=c(2, 2))
+
+plot(iris$Sepal.Length, iris$Sepal.Width, main = "base R, v1")
+plot(Sepal.Width ~ Sepal.Length, data = iris, main = "base R, v2")
+
+plot.new()              ## suggested by @Josh
+vps <- baseViewports()
+pushViewport(vps$figure) ##   I am in the space of the autocorrelation plot
+vp1 <-plotViewport(c(1.8,1,0,1)) ## create new vp with margins, you play with this values 
+require(ggplot2)
+
+q1 = ggplot(iris, aes(x = Sepal.Length, y = Sepal.Width)) +
+  geom_point() + labs(title = "ggplot")
+q2 = qplot(Sepal.Length, Sepal.Width, data = iris) + labs(title = "qplot")
+print(q1,vp = vp1)
+```
+
+2. Choosing geoms
+
+```{r}
+qplot(x=factor(cyl), y=factor(vs), data = mtcars, geom = "jitter")
+```
+
+3. `geom_dotplot()`
+
+```{r}
+# "Basic" dot plot, with geom_point():
+dot1 = ggplot(mtcars, aes(cyl, wt, col = am)) +
+  geom_point(position = position_jitter(0.2, 0)) + labs(title = "geom_point()")
+
+# 1 - "True" dot plot, with geom_dotplot():
+dot2 = ggplot(mtcars, aes(cyl, wt, fill = am)) +
+  geom_dotplot(binaxis = "y", stackdir = "center") + labs(title = "geom_dotplot()")
+
+# 2 - qplot with geom "dotplot", binaxis = "y" and stackdir = "center"
+dot3 = qplot(
+  cyl, wt,
+  data = mtcars,
+  fill = am,
+  geom = "dotplot",
+  binaxis = "y",
+  stackdir = "center"
+) + labs(title = "qplot(), geom = \"dotplot\"")
+
+grid.arrange(dot1,dot2,dot3, ncol=2)
+```
+
+
+## 5.2 Wrap-up
+
+### Ex 1. Chicken weight with summary statistics
+
+```{r}
+ggplot(ChickWeight, aes(x = Time, y = weight, color = Diet)) +
+  geom_line(aes(group = Chick), alpha=0.3) +
+  geom_smooth(lwd=2, se=FALSE)
+```
+
+
+

@@ -1,0 +1,2 @@
+"0","vps <- baseViewports()"
+"0","pushViewport(vps$figure) ##   I am in the space of the autocorrelation plot"

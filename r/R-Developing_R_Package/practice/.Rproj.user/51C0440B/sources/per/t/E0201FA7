@@ -1,0 +1,26 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1581274177859.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "2283082400",
+    "id" : "E0201FA7",
+    "lastKnownWriteTime" : 1581284101,
+    "last_content_update" : 1581284101138,
+    "path" : "~/Documents/Training/DataCamp/R-Developing_R_Package/practice/chapter4.Rmd",
+    "project_path" : "chapter4.Rmd",
+    "properties" : {
+        "cursorPosition" : "14,71",
+        "scrollLine" : "4",
+        "tempName" : "Untitled2"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 4,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_markdown"
+}

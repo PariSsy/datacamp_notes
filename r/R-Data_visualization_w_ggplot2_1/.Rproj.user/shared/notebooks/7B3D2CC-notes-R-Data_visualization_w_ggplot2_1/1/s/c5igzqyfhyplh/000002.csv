@@ -1,0 +1,6 @@
+"0","b1 = load.image(""slides/ch4_bar1.png"")"
+"0","b3 = load.image(""slides/ch4_bar2.png"")"
+"0","b4 = load.image(""slides/ch4_bar3.png"")"
+"0",""
+"0","par(mfrow=c(2,2))"
+"0","plot(b1, axes = FALSE)"

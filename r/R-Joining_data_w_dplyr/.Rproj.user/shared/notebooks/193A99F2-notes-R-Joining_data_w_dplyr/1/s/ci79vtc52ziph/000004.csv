@@ -1,0 +1,8 @@
+"0","color_palette <- setNames(colors_joined$rgb, colors_joined$name)"
+"0",""
+"0","colors_joined %>%"
+"0","  mutate(name = fct_reorder(name, difference)) %>%"
+"0","  ggplot(aes(name, difference, fill = name)) +"
+"0","  geom_col() +"
+"0","  coord_flip() +"
+"0","  scale_fill_manual(values = color_palette, guide = FALSE)"

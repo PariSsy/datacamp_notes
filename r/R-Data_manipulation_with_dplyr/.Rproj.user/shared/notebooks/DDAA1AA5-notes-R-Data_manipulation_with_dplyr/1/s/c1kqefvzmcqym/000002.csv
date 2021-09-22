@@ -1,0 +1,7 @@
+"0","babynames_fraction %>%"
+"0","  # Arrange the data in order of name, then year "
+"0","  arrange(name, year) %>%"
+"0","  # Group the data by name"
+"0","  group_by(name) %>%"
+"0","  # Add a ratio column that contains the ratio between each year "
+"0","  mutate(ratio = fraction / lag(fraction))"

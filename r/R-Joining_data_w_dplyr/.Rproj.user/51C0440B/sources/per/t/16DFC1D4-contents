@@ -1,0 +1,402 @@
+---
+title: "Joining Data with dplyr"
+author: "Paris Zhang"
+date: "4/16/2020"
+output:
+  html_document:
+    code_folding: show
+    theme: readable
+    toc: yes
+    toc_depth: 5
+    toc_float: true
+editor_options:
+  chunk_output_type: inline
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+Taught by *Chris Cardillo*, Data Scientist at DataCamp. [Course link](https://learn.datacamp.com/courses/joining-data-with-dplyr-b3f91a4a-4a9d-4a6f-b655-292a1641c3e2)
+
+This is a comprehensive notes on `inner_join()`, `left_join()`, `right_join()`, `full_join()`, `semi_join()`, and `anti_join()`.
+
+
+```{r, message=FALSE}
+# Data manipulation
+library(dplyr)
+
+# To use replace_na()
+library(tidyr)
+
+# Data visualization
+library(ggplot2)
+library(forcats)
+
+# Beautiful table presentation
+library(knitr) # May not use kable() in this note
+
+# Overview data summary
+library(summarytools) # May not use dfSummary() in this note
+
+# Applies classic ggplot2 theme
+theme_set(theme_classic())
+```
+
+# 1. Inner Join
+
+* `parts` is a list of all LEGO parts
+* `part_categories` with these parts' corresponding categories
+* `inventory_parts` has some additional information about those parts, such as the `color_id` of each part you would find in a specific LEGO kit
+
+## 1.1 The `inner_join` verb
+
+The Sets data
+```{r}
+sets = readRDS("data/sets.rds")
+themes = readRDS("data/themes.rds")
+
+head(sets)
+head(themes)
+```
+
+Inner join: 
+
+```{r}
+sets %>%
+  inner_join(themes, by = c("theme_id" = "id"))
+```
+
+Inner join with customization: 
+
+```{r}
+# Column names will add a suffix when duplicates are produced
+## name.x -> name_set
+## name.y -> name_theme
+sets %>%
+  inner_join(themes, by = c("theme_id" = "id"), suffix = c("_set", "_theme"))
+```
+
+
+Most common themes: 
+
+```{r}
+sets %>%
+  inner_join(themes, by = c("theme_id" = "id"), suffix = c("_set", "_theme")) %>%
+  count(name_theme, sort = TRUE)
+```
+
+
+## 1.2 Joining with a one-to-many relationship
+
+Joinging `sets` and `themes` returned a 4,977 $\times$ 6 table.
+
+The `inventories` table:
+
+```{r}
+inventories = readRDS("data/inventories.rds")
+head(inventories)
+```
+
+Joining sets and inventories returns a 5,056 x 6 table.
+```{r}
+sets %>%
+  inner_join(inventories, by = "set_num")
+```
+
+Filtering the joined table returns a 4,976 x 6 table; 1 set has no version 1 - this could be a quality issue
+
+```{r}
+sets %>%
+  inner_join(inventories, by = "set_num") %>%
+  filter(version == 1)
+```
+
+
+## 1.3 Joining three or more tables
+
+Joining `sets`, `inventories`, and `themes`:
+```{r}
+sets %>%
+  inner_join(inventories, by = "set_num") %>%
+  inner_join(themes, by = c("theme_id" = "id"), suffix = c("_set", "_theme"))
+```
+
+Review Slides - Chapter 1 - p.24 for data structures (key chains).
+
+
+***
+
+# 2. Left and Right Join
+
+## 2.1 The `left_join` verb
+
+```{r}
+inventory_parts = readRDS("data/inventory_parts.rds")
+inventory_parts_joined <- inventories %>%
+  inner_join(inventory_parts, by = c("id" = "inventory_id")) %>%
+  select(-id, -version) %>%
+  arrange(desc(quantity))
+
+# Filter for LEGO sets
+batmobile <- inventory_parts_joined %>%
+  filter(set_num == "7784-1") %>%
+  select(-set_num)
+batwing <- inventory_parts_joined %>%
+  filter(set_num == "70916-1") %>%
+  select(-set_num)
+
+head(batmobile)
+head(batwing)
+```
+
+Joining with multiple columns (`batmobile` is 173 x 3, `batwing` is 309 x 3):
+
+```{r}
+batmobile %>%
+  inner_join(batwing, by = c("part_num", "color_id"), suffix = c("_batmobile", "_batwing"))
+```
+
+The left join (retains 173 rows):
+
+```{r}
+batmobile %>%
+  left_join(batwing, by = c("part_num", "color_id"), suffix = c("_batmobile", "_batwing"))
+```
+
+
+## 2.2 The `right_join` verb
+
+Right join is the mirror image of left join.
+
+1. Left join (173 rows)
+```{r}
+batmobile %>%
+  left_join(batwing, by = c("part_num", "color_id"), suffix = c("_batmobile", "_batwing"))
+```
+
+2. Right join (312 rows)
+```{r}
+batmobile %>%
+  right_join(batwing, by = c("part_num", "color_id"), suffix = c("_batmobile", "_batwing"))
+```
+
+Compare inner join and right join to serve different purposes:
+
+```{r}
+sets %>%
+  count(theme_id, sort = TRUE) %>%
+  inner_join(themes, by = c("theme_id" = "id"))
+
+sets %>%
+  count(theme_id, sort = TRUE) %>%
+  right_join(themes, by = c("theme_id" = "id")) %>%
+  replace_na(list(n = 0))
+```
+
+## 2.3 Joining tables to themselves {.tabset}
+
+### Example 1. Lord of the rings
+`themes` hierarchy:
+
+```{r}
+themes
+```
+
+Child-parent table:
+```{r}
+themes %>%
+  inner_join(themes, by = c("parent_id" = "id"), suffix = c("_child", "_parent"))
+```
+
+Lord ofthe Rings themes: parent
+
+```{r}
+themes %>%
+  inner_join(themes, by = c("parent_id"="id"), suffix = c("_child","_parent")) %>%
+  filter(name_child == "The Lord of the Rings")
+```
+
+Lord ofthe Rings themes: children
+
+```{r}
+themes %>%
+  inner_join(themes, by = c("parent_id"="id"), suffix = c("_child","_parent")) %>%
+  filter(name_parent == "The Lord of the Rings")
+```
+
+
+Review slides Chapter 2 p.27 for the trilogy structure.
+
+### Example 2. Harry Potter
+In this exercise, you'll try a similar approach of joining themes to their own children, which is similar but reversed. Let's try this out to discover what children the theme `"Harry Potter"` has.
+
+Joining themes to their children:
+
+```{r}
+themes %>% 
+	# Inner join the themes table
+	inner_join(themes, by = c("id"="parent_id"), suffix = c("_parent","_child")) %>%
+	# Filter for the "Harry Potter" parent name 
+	filter(name_parent == "Harry Potter")
+```
+
+Joining themes to their grandchildren:
+
+```{r}
+# Join themes to itself again to find the grandchild relationships
+themes %>% 
+  inner_join(themes, by = c("id" = "parent_id"), suffix = c("_parent", "_child")) %>%
+  inner_join(themes, by = c("id_child" = "parent_id"), suffix = c("_parent","_grandchild"))
+```
+
+Left-joining a table to itself:
+
+```{r}
+themes %>% 
+  # Left join the themes table to its own children
+  left_join(themes, by = c("id"="parent_id"), suffix = c("_parent","_child")) %>%
+  # Filter for themes that have no child themes
+  filter(is.na(name_child))
+```
+
+
+***
+
+# 3. Full, Semi, and Anti Joins
+
+## 3.1 The `full_join` verb
+
+```{r}
+batmobile %>%
+  full_join(batwing, by = c("part_num", "color_id"), suffix = c("_batmobile", "_batwing"))
+```
+
+Replace NA: multiple variables
+
+```{r}
+batmobile %>%
+  full_join(batwing, by = c("part_num", "color_id"), suffix = c("_batmobile", "_batwing")) %>%
+  replace_na(list(quantity_batmobile = 0,
+                  quantity_batwing = 0))
+```
+
+
+
+## 3.2 The `semi_join` and `anti_join` verbs
+
+These two joins are filtering joins. They Keep or remove observations from the first table:
+
+1. `semi_join()` - What observations in X are also in Y?
+2. `anti_join()` - What observations in X are not in Y?
+
+45 observations in `batmobile` are also in `batwing` based on `color_id` and `part_num`:
+
+```{r}
+batmobile %>%
+  semi_join(batwing, by = c("color_id", "part_num"))
+```
+
+128 observations in `batmobile` are not in `batwing` based on `color_id` and `part_num`:
+
+```{r}
+batmobile %>%
+  anti_join(batwing, by = c("color_id", "part_num"))
+```
+
+Filtering with semi join:
+
+```{r}
+themes %>%
+  semi_join(sets, by = c("id" = "theme_id"))
+```
+
+
+Filtering with anti join:
+
+```{r}
+themes %>%
+  anti_join(sets, by = c("id" = "theme_id"))
+```
+
+
+
+## 3.3 Visualizing set differences
+
+Step 1. Aggregating sets into colors
+```{r}
+batmobile_colors <- batmobile %>%
+  group_by(color_id) %>%
+  summarize(total = sum(quantity))
+batmobile_colors
+
+batwing_colors <- batwing %>%
+  group_by(color_id) %>%
+  summarize(total = sum(quantity))
+batwing_colors
+```
+
+Step 2. Comparing color schemes of sets
+```{r}
+colors <- readRDS("data/colors.rds")
+
+colors_joined <- batmobile_colors %>%
+  full_join(batwing_colors, by = "color_id", suffix = c("_batmobile", "_batwing")) %>%
+  replace_na(list(total_batmobile = 0, total_batwing = 0)) %>%
+  # Adding the color names
+  inner_join(colors, by = c("color_id" = "id")) %>%
+  # Adding percentages
+  mutate(total_batmobile = total_batmobile / sum(total_batmobile), # Normalization
+         total_batwing = total_batwing / sum(total_batwing),
+         # The difference between fractions
+         difference = total_batmobile - total_batwing)
+colors_joined
+```
+
+Step 3. Visualizing the data
+
+```{r}
+color_palette <- setNames(colors_joined$rgb, colors_joined$name)
+
+colors_joined %>%
+  mutate(name = fct_reorder(name, difference)) %>%
+  ggplot(aes(name, difference, fill = name)) +
+  geom_col() +
+  coord_flip() +
+  scale_fill_manual(values = color_palette, guide = FALSE)
+```
+
+
+
+***
+
+# 4. Case Study: Joins on Stack Overflow Data
+
+Three of the Stack Overflow survey datasets are `questions`, `question_tags`, and `tags`:
+
+* `questions`: an ID and the score, or how many times the question has been upvoted; the data only includes R-based questions
+* `question_tags`: a tag ID for each question and the question's id
+* `tags`: a tag id and the tag's name, which can be used to identify the subject of each question, such as `ggplot2` or `dplyr`
+
+```{r}
+questions = readRDS("data/questions.rds")
+question_tags = readRDS("data/question_tags.rds")
+tags = readRDS("data/tags.rds")
+```
+
+
+## 4.1 Stack Overflow questions
+Coding exercises.
+
+## 4.2 Joining questions and answers
+Coding exercises.
+
+## 4.3 The `bind_rows()` verb
+
+* `bind_rows()` is the `dplyr` version of `rbind()`.
+
+
+
+
+

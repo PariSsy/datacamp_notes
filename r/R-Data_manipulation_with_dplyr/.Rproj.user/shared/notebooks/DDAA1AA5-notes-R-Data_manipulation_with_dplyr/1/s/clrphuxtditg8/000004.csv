@@ -1,0 +1,7 @@
+"0","counties %>%"
+"0","  select(region, state, county, population, income) %>%"
+"0","  group_by(region, state) %>%"
+"0","  # Calculate average income"
+"0","  summarise(average_income = mean(income)) %>%"
+"0","  # Find the 2 highest income states in each region"
+"0","  top_n(2, average_income)"

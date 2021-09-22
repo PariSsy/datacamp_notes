@@ -1,0 +1,8 @@
+"0","args(cor)
+"
+"1","function (x, y = NULL, use = ""everything"", method = c(""pearson"", 
+"
+"1","    ""kendall"", ""spearman"")) 
+"
+"1","NULL
+"

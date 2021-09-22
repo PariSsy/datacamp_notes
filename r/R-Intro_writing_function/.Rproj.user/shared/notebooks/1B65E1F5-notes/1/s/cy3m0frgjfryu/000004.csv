@@ -1,0 +1,4 @@
+"2","Error in calc_geometric_mean(c(1, -1)) : 
+  is_positive : x contains non-positive values.
+There was 1 failure:
+"

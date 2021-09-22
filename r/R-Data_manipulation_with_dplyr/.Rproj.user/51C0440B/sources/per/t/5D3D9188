@@ -1,0 +1,27 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1584731581718.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "2386803530",
+    "id" : "5D3D9188",
+    "lastKnownWriteTime" : 1584744907,
+    "last_content_update" : 1585087089564,
+    "path" : "~/Documents/Training/DataCamp/R-Data_manipulation_with_dplyr/notes-R-Data_manipulation_with_dplyr.Rmd",
+    "project_path" : "notes-R-Data_manipulation_with_dplyr.Rmd",
+    "properties" : {
+        "cursorPosition" : "156,0",
+        "last_setup_crc32" : "",
+        "scrollLine" : "148",
+        "tempName" : "Untitled1"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 1,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_markdown"
+}

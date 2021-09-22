@@ -1,0 +1,26 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1584489823856.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "2487105951",
+    "id" : "B5CE2B63",
+    "lastKnownWriteTime" : 1584496945,
+    "last_content_update" : 1584496945378,
+    "path" : "~/Documents/Training/DataCamp/R-Case_studies-Importing_and_cleaning_data/notes.Rmd",
+    "project_path" : "notes.Rmd",
+    "properties" : {
+        "cursorPosition" : "55,34",
+        "scrollLine" : "42",
+        "tempName" : "Untitled1"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 1,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_markdown"
+}

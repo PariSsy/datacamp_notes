@@ -1,0 +1,206 @@
+---
+title: "Cluster Analysis in R"
+author: "Paris Zhang"
+output:
+  html_document:
+    code_folding: hide
+---
+
+[Cluster Analysis in R](https://learn.datacamp.com/courses/cluster-analysis-in-r)  
+Instructor: Dmitriy Gorenshteyn, Lead Data Scientist at Memorial Sloan Kettering Cancer Center
+
+Course finished: 2020-06-21  
+Notes taken:     2020-06-21
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Cluster Analysis
+
+
+| | Hierarchical Clustering | k-means |
+|-|-------------------------|---------|
+| Distance used | virtually any | euclidean only |
+| Results stable | Yes | No |
+| Evaluating # of clusters | dendrogram, silhouette, elbow | silhouette, elbow |
+| Computation complexity | Relatively higer | Relatively lower |
+
+
+* Cluster Analysis
+  + Distance: Euclidean, Jaccard - `dist(x, method = "binary")`
+  + Scaling (standardization is the most common way) - `scale()`
+* **Hierarchical Clustering**
+  + Linkage: complete (max), single (min), average - `hclust()`
+  + Dendrogram: metrics and height - `cutree(x, h = n)`
+* **k-means Clustering**: centroid and k - `kmeans()`
+* More clustering methods:
+  + **k-mediods** - `pam()`
+  + **DBSCAN**
+  + **Optics**
+
+
+
+# Case Study: National Occupational Mean Wage {.tabset}
+
+
+
+## Prep
+
+```{r, message=FALSE}
+library(dplyr)
+library(ggplot2)
+library(knitr)
+library(kableExtra)
+
+s <- function(x){x %>% kable() %>% kable_styling(full_width = F)}
+
+oes <- readRDS("data/oes.rds")
+as.data.frame(head(oes)) %>% s
+```
+
+
+## Hierarchical
+
+1. Evaluate whether pre-processing is necessary
+2. Create a distance matrix
+3. Build a dendrogram
+4. Extract clusters from dendrogram
+5. Explore resulting clusters
+
+
+```{r}
+# Prepare the Distance Matrix
+dist_oes <- dist(oes)
+
+# Generate hclust for complete, single & average linkage methods
+hc_complete <- hclust(dist_oes, method = "complete")
+hc_single <- hclust(dist_oes, method = "single")
+hc_average <- hclust(dist_oes, method = "average")
+
+# Plot & Label the 3 Dendrograms Side-by-Side
+# Hint: To see these Side-by-Side run the 4 lines together as one command
+par(mfrow = c(1,3))
+plot(hc_complete, main = 'Complete Linkage', xlab = "")
+plot(hc_single, main = 'Single Linkage', xlab = "")
+plot(hc_average, main = 'Average Linkage', xlab = "")
+```
+
+
+```{r, message=FALSE}
+library(dendextend)
+hc_oes <- hclust(dist_oes, method = "complete")
+
+# Create a dendrogram object from the hclust variable
+dend_oes <- as.dendrogram(hc_oes)
+
+# Color branches by cluster formed from the cut at a height of 100000 & plot
+dend_100000 <- color_branches(dend_oes, h = 100000)
+
+# Plot the dendrogram with clusters colored below height 100000
+par(mfrow = c(1,2))
+plot(dend_oes)
+plot(dend_100000)
+```
+
+
+```{r, message=FALSE}
+dist_oes <- dist(oes, method = 'euclidean')
+hc_oes <- hclust(dist_oes, method = 'average')
+
+library(tibble)
+library(tidyr)
+library(gridExtra)
+
+# Move the rownames into a column of the data frame
+df_oes <- rownames_to_column(as.data.frame(oes), var = 'occupation')
+
+# Create a cluster assignment vector at h = 100,000
+cut_oes <- cutree(hc_oes, h = 100000)
+
+# Generate the segmented the oes data frame
+clust_oes <- mutate(df_oes, cluster = cut_oes)
+
+# Create a tidy data frame by gathering the year and values into two columns
+gathered_oes <- gather(data = clust_oes, 
+                       key = year, 
+                       value = mean_salary, 
+                       -occupation, -cluster)
+
+# View the clustering assignments by sorting the cluster assignment vector
+sort(cut_oes) %>% s
+
+# Plot the relationship between mean_salary and year and color the lines by the assigned cluster
+ggplot(gathered_oes, aes(x = year, y = mean_salary, color = factor(cluster))) + 
+  geom_line(aes(group = occupation)) +
+  labs(title = "Hierarchical Clustering", subtitle = "Based on Dendrogram with Euclidean Distance & Average Linkage") +
+  xlab("") +
+  ylab("") +
+  theme_classic() +
+  theme(
+    legend.position = "none",
+    axis.text.x = element_text(angle = 90)
+  )
+```
+
+
+
+
+## k-means
+
+1. Evaluate whether pre-processing is necessary
+2. Estimate the "best" k using the elbow plot
+3. Estimate the "best" k using the maximum average silhouette width
+4. Explore resulting clusters
+
+
+
+```{r, message=FALSE}
+library(purrr)
+library(cluster)
+
+# Use map_dbl to run many models with varying value of k (centers)
+tot_withinss <- map_dbl(1:10,  function(k){
+  model <- kmeans(x = oes, centers = k)
+  model$tot.withinss
+})
+
+# Generate a data frame containing both k and tot_withinss
+elbow_df <- data.frame(
+  k = 1:10,
+  tot_withinss = tot_withinss
+)
+
+# Plot the elbow plot
+ggplot(elbow_df, aes(x = k, y = tot_withinss)) +
+  geom_line() +
+  scale_x_continuous(breaks = 1:10) +
+  theme_classic() +
+  labs(title = "Elbow Analysis for K-means")
+
+# Use map_dbl to run many models with varying value of k
+sil_width <- map_dbl(2:10,  function(k){
+  model <- pam(oes, k = k)
+  model$silinfo$avg.width
+})
+
+# Generate a data frame containing both k and sil_width
+sil_df <- data.frame(
+  k = 2:10,
+  sil_width = sil_width
+)
+
+# Plot the relationship between k and sil_width
+ggplot(sil_df, aes(x = k, y = sil_width)) +
+  geom_line() +
+  scale_x_continuous(breaks = 2:10) +
+  labs(title = "Average Silhouette Widths for K-means") +
+  theme_classic()
+```
+
+
+
+
+
+
